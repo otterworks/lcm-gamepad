@@ -23,6 +23,14 @@ utime(void)
   return (int64_t)(t.tv_sec * 1000000) + (int64_t)(t.tv_nsec / 1000);
 }
 
+static inline double
+normalize(const int v, const int min, const int max)
+{
+  double half_range = 0.5 * (max - min);
+  double sv = v - half_range;
+  return sv / half_range;
+}
+
 int
 main(int argc, char** argv)
 {
@@ -63,6 +71,16 @@ main(int argc, char** argv)
           stderr);
     exit(EXIT_FAILURE);
   }
+
+  const int abs_x_min = libevdev_get_abs_minimum(dev, ABS_X);
+  const int abs_x_max = libevdev_get_abs_maximum(dev, ABS_X);
+  const int abs_y_min = libevdev_get_abs_minimum(dev, ABS_Y);
+  const int abs_y_max = libevdev_get_abs_maximum(dev, ABS_Y);
+  const int abs_rx_min = libevdev_get_abs_minimum(dev, ABS_RX);
+  const int abs_rx_max = libevdev_get_abs_maximum(dev, ABS_RX);
+  const int abs_ry_min = libevdev_get_abs_minimum(dev, ABS_RY);
+  const int abs_ry_max = libevdev_get_abs_maximum(dev, ABS_RY);
+
   memset(&pev, 0, sizeof(pev));
   pev.events = EPOLLIN;
   pev.data.fd = ctfd;
@@ -94,16 +112,16 @@ main(int argc, char** argv)
         if (iev.type == EV_ABS) {
           switch (iev.code) {
             case ABS_X:
-              twi.angular[2] = iev.value;
+              twi.angular[2] = normalize(iev.value, abs_x_min, abs_x_max);
               break;
             case ABS_Y:
-              twi.linear[2] = -iev.value; // inverted
+              twi.linear[2] = -normalize(iev.value, abs_y_min, abs_y_max);
               break;
             case ABS_RX:
-              twi.linear[1] = iev.value;
+              twi.linear[1] = normalize(iev.value, abs_rx_min, abs_rx_max);
               break;
             case ABS_RY:
-              twi.linear[0] = iev.value;
+              twi.linear[0] = normalize(iev.value, abs_ry_min, abs_ry_max);
               break;
             default:
               fprintf(stderr,
