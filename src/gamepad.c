@@ -4,6 +4,7 @@
 #include "gamepad_argp.h"
 #include "kinematics_twist_t.h"
 
+#include <assert.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <time.h>
@@ -48,7 +49,9 @@ main(int argc, char** argv)
     fputs("failed to initialize libevdev\n", stderr);
     exit(EXIT_FAILURE);
   }
-  printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
+  if (args.verbosity > -1) {
+    printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
+  }
   if (args.verbosity > 0) {
     printf("Input device ID: bus %#x vendor %#x product %#x\n",
            libevdev_get_id_bustype(dev),
@@ -78,11 +81,39 @@ main(int argc, char** argv)
   memset(&pev, 0, sizeof(pev));
   uint64_t expirations = 0;
   while (1 == epoll_wait(epfd, &pev, 1, -1)) { // single-event, blocking
-    // TODO: assert ( ev.events & EPOLLIN )
+    assert(pev.events & EPOLLIN);
     if (ctfd == pev.data.fd) {
       rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL, &iev);
       if (rc == LIBEVDEV_READ_STATUS_SUCCESS) {
-        kinematics_twist_t_publish(lcm, TWIST_OUTPUT_CHANNEL, &twi);
+        if (args.verbosity > 1) {
+          printf("Event type: %s, code: %s, value: %d\n",
+                 libevdev_event_type_get_name(iev.type),
+                 libevdev_event_code_get_name(iev.type, iev.code),
+                 iev.value);
+        }
+        if (iev.type == EV_ABS) {
+          switch (iev.code) {
+            case ABS_X:
+              twi.angular[2] = iev.value;
+              break;
+            case ABS_Y:
+              twi.linear[2] = -iev.value; // inverted
+              break;
+            case ABS_RX:
+              twi.linear[1] = iev.value;
+              break;
+            case ABS_RY:
+              twi.linear[0] = iev.value;
+              break;
+            default:
+              fprintf(stderr,
+                      "unhandled code: %s, value: %d\n",
+                      libevdev_event_code_get_name(iev.type, iev.code),
+                      iev.value);
+          }
+          twi.utime = utime();
+          kinematics_twist_t_publish(lcm, TWIST_OUTPUT_CHANNEL, &twi);
+        }
       } else if (rc == LIBEVDEV_READ_STATUS_SYNC) {
         fputs("libevdev_next_event returned LIBEVDEV_READ_STATUS_SYNC\n",
               stderr);
