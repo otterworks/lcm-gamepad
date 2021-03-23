@@ -12,6 +12,7 @@
 #include <sys/epoll.h>
 
 #include <lcm/lcm.h>
+#include <libevdev/libevdev.h>
 
 static inline int64_t
 utime(void)
@@ -28,22 +29,42 @@ main(int argc, char** argv)
   args.device = DEV_DEFAULT;
   argp_parse(&argp, argc, argv, 0, 0, &args);
 
-  struct epoll_event ev = { 0 };
+  int rc = 0;
+  struct epoll_event pev = { 0 };
+  struct libevdev* dev = NULL;
+  struct input_event iev = { 0 };
   kinematics_twist_t twi = { 0 };
 
-  int epfd = epoll_create(1); // arg is supposed to be vestigal
+  int epfd = epoll_create(1);
   if (-1 == epfd) {
     perror("epoll_create");
     fputs("failed to create epoll file descriptor\n", stderr);
     exit(EXIT_FAILURE);
   }
 
-  int ctfd = open(args.device, O_RDONLY); // fd for controller
-  memset(&ev, 0, sizeof(ev));
-  ev.events = EPOLLIN;
-  ev.data.fd = ctfd;
-  int rv = epoll_ctl(epfd, EPOLL_CTL_ADD, ctfd, &ev);
-  if (-1 == rv) {
+  int ctfd = open(args.device, O_RDONLY | O_NONBLOCK);
+  if (0 != libevdev_new_from_fd(ctfd, &dev)) {
+    perror("libevdev_new_from_fd");
+    fputs("failed to initialize libevdev\n", stderr);
+    exit(EXIT_FAILURE);
+  }
+  printf("Input device name: \"%s\"\n", libevdev_get_name(dev));
+  if (args.verbosity > 0) {
+    printf("Input device ID: bus %#x vendor %#x product %#x\n",
+           libevdev_get_id_bustype(dev),
+           libevdev_get_id_vendor(dev),
+           libevdev_get_id_product(dev));
+  }
+  if (!libevdev_has_event_type(dev, EV_ABS)) {
+    fputs("Input device cannot describe absolute axis value changes.\n",
+          stderr);
+    exit(EXIT_FAILURE);
+  }
+  memset(&pev, 0, sizeof(pev));
+  pev.events = EPOLLIN;
+  pev.data.fd = ctfd;
+  rc = epoll_ctl(epfd, EPOLL_CTL_ADD, ctfd, &pev);
+  if (-1 == rc) {
     perror("epoll_ctl");
     fprintf(stderr, "failed to add input fd %d to epoll fd %d\n", ctfd, epfd);
   }
@@ -54,12 +75,18 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-  memset(&ev, 0, sizeof(ev));
+  memset(&pev, 0, sizeof(pev));
   uint64_t expirations = 0;
-  while (1 == epoll_wait(epfd, &ev, 1, -1)) { // single-event, blocking
+  while (1 == epoll_wait(epfd, &pev, 1, -1)) { // single-event, blocking
     // TODO: assert ( ev.events & EPOLLIN )
-    if (ctfd == ev.data.fd) {
-      kinematics_twist_t_publish(lcm, TWIST_OUTPUT_CHANNEL, &twi);
+    if (ctfd == pev.data.fd) {
+      rc = libevdev_next_event(dev, LIBEVDEV_READ_FLAG_NORMAL, &iev);
+      if (rc == LIBEVDEV_READ_STATUS_SUCCESS) {
+        kinematics_twist_t_publish(lcm, TWIST_OUTPUT_CHANNEL, &twi);
+      } else if (rc == LIBEVDEV_READ_STATUS_SYNC) {
+        fputs("libevdev_next_event returned LIBEVDEV_READ_STATUS_SYNC\n",
+              stderr);
+      }
     }
   }
 
@@ -72,6 +99,7 @@ main(int argc, char** argv)
   }
 
   lcm_destroy(lcm);
+  libevdev_free(dev);
   close(ctfd);
   close(epfd);
   exit(EXIT_FAILURE); // success runs forever

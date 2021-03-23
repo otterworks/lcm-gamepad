@@ -10,13 +10,14 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([subdir-objects no-dist-gzip dist-xz -Wall -Werror foreign])
 AC_CONFIG_FILES([Makefile])
 
-AC_SEARCH_LIBS([argp_parse],[argp])
-
+PKG_CHECK_MODULES([EVDEV], [libevdev >= 1])
 PKG_CHECK_MODULES([LCM], [lcm >= 1.3.1])
 AC_CHECK_PROG([LCMGEN], [lcm-gen], [lcm-gen], [/bin/false])
 AS_IF([test "${LCMGEN}" == "x/bin/false"],
       AC_MSG_ERROR([LCM generator `lcm-gen` not found])])
 
+AC_SEARCH_LIBS([argp_parse],[argp])
+AC_SEARCH_LIBS([libevdev_new_from_fd],[evdev])
 AC_SEARCH_LIBS([lcm_create],[lcm])
 
 AC_PROG_CC
