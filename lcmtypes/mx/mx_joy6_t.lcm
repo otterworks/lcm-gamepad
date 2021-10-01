@@ -1,0 +1,10 @@
+package mx;
+
+struct joy6_t {
+  int64_t utime;
+  double joyval[6];
+
+const int16_t STICK_MAX = 32767;
+const int16_t STICK_MIN = -32767;
+const int16_t STICK_DEADBAND = 7000;
+}

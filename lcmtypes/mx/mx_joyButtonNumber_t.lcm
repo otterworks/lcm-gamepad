@@ -1,0 +1,6 @@
+package mx;
+
+struct joyButtonNumber_t {
+  int64_t utime;
+  int16_t buttonNumber;
+}
