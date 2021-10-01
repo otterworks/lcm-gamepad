@@ -23,3 +23,9 @@ see also
 
 - https://gamepad-tester.com/
 
+formatting
+----------
+
+```
+clang-format -i --style=mozilla src/*.c
+```
