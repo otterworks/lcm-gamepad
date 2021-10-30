@@ -66,6 +66,7 @@ main(int argc, char** argv)
     perror("timerfd_settime");
     fprintf(stderr,
             "failed to set timer %d: %ld ns, interval %ld ns\n",
+            otfd,
             oits.it_value.tv_nsec,
             oits.it_interval.tv_nsec);
     exit(EXIT_FAILURE);
