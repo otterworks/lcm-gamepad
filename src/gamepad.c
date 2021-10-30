@@ -11,9 +11,12 @@
 #include <unistd.h>
 
 #include <sys/epoll.h>
+#include <sys/timerfd.h>
 
 #include <lcm/lcm.h>
 #include <libevdev/libevdev.h>
+
+const struct itimerspec oits = { { 0, OUTPUT_PERIOD }, { 0, OUTPUT_PERIOD } };
 
 static inline int64_t
 utime(void)
@@ -51,7 +54,28 @@ main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
+  int otfd = timerfd_create(CLOCK_MONOTONIC, 0);
+  if (-1 == otfd) {
+    perror("timerfd_create");
+    fprintf(stderr, "failed to create timer for output\n");
+    exit(EXIT_FAILURE);
+  }
+  if (-1 == timerfd_settime(otfd, 0, &oits, NULL)) {
+    perror("timerfd_settime");
+    fprintf(stderr,
+            "failed to set timer %d: %ld ns, interval %ld ns\n",
+            otfd,
+            oits.it_value.tv_nsec,
+            oits.it_interval.tv_nsec);
+    exit(EXIT_FAILURE);
+  }
+
   int ctfd = open(args.device, O_RDONLY | O_NONBLOCK);
+  if (-1 == ctfd) {
+    perror("open");
+    fprintf(stderr, "tried to open %s\n", args.device);
+    exit(EXIT_FAILURE);
+  }
   if (0 != libevdev_new_from_fd(ctfd, &dev)) {
     perror("libevdev_new_from_fd");
     fputs("failed to initialize libevdev\n", stderr);
@@ -81,13 +105,22 @@ main(int argc, char** argv)
   const int abs_ry_min = libevdev_get_abs_minimum(dev, ABS_RY);
   const int abs_ry_max = libevdev_get_abs_maximum(dev, ABS_RY);
 
-  memset(&pev, 0, sizeof(pev));
   pev.events = EPOLLIN;
-  pev.data.fd = ctfd;
-  rc = epoll_ctl(epfd, EPOLL_CTL_ADD, ctfd, &pev);
+  pev.data.fd = otfd;
+  rc = epoll_ctl(epfd, EPOLL_CTL_ADD, pev.data.fd, &pev);
   if (-1 == rc) {
     perror("epoll_ctl");
-    fprintf(stderr, "failed to add input fd %d to epoll fd %d\n", ctfd, epfd);
+    fprintf(stderr,
+            "failed to add output timer fd %d to epoll fd %d\n",
+            pev.data.fd,
+            epfd);
+  }
+  pev.data.fd = ctfd;
+  rc = epoll_ctl(epfd, EPOLL_CTL_ADD, pev.data.fd, &pev);
+  if (-1 == rc) {
+    perror("epoll_ctl");
+    fprintf(
+      stderr, "failed to add input fd %d to epoll fd %d\n", pev.data.fd, epfd);
   }
 
   lcm_t* lcm = lcm_create(NULL);
@@ -130,11 +163,18 @@ main(int argc, char** argv)
                       iev.value);
           }
           twi.utime = utime();
-          kinematics_twist_t_publish(lcm, TWIST_OUTPUT_CHANNEL, &twi);
+          // DO NOT publish on LCM at the event rate from the controller,
+          // let the timerfd handle that
         }
       } else if (rc == LIBEVDEV_READ_STATUS_SYNC) {
         fputs("libevdev_next_event returned LIBEVDEV_READ_STATUS_SYNC\n",
               stderr);
+      }
+    } else if (otfd == pev.data.fd) {
+      size_t n = read(pev.data.fd, &expirations, 8);
+      if (twi.utime != 0) {
+        twi.utime = utime();
+        kinematics_twist_t_publish(lcm, TWIST_OUTPUT_CHANNEL, &twi);
       }
     }
   }
@@ -150,6 +190,7 @@ main(int argc, char** argv)
   lcm_destroy(lcm);
   libevdev_free(dev);
   close(ctfd);
+  close(otfd);
   close(epfd);
   exit(EXIT_FAILURE); // success runs forever
 }
