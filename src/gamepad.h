@@ -1,5 +1,5 @@
-// #include "dualsense.h"
-#include "dualshock.h"
+#include "dualsense.h"
+// #include "dualshock.h"
 
 #define OUTPUT_PERIOD 100000000 // nanoseconds
 
