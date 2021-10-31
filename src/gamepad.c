@@ -198,12 +198,7 @@ main(int argc, char** argv)
       if (joy.utime != 0) {
         joy.utime = utime();
         mx_joy6_t_publish(lcm, STICK_OUTPUT_CHANNEL, &joy);
-
         joy.utime = 0;
-        joy.joyval[XJ_SURGE] = 0;
-        joy.joyval[XJ_SWAY] = 0;
-        joy.joyval[XJ_HEAVE] = 0;
-        joy.joyval[XJ_YAW] = 0;
       }
     }
   }
