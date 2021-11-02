@@ -1,6 +1,6 @@
 EXTRA_DIST = .build-aux/git-version-gen
 ACLOCAL_AMFLAGS = -I .build-aux/m4
-AM_CFLAGS = $(EVDEV_CFLAGS) $(LCM_CFLAGS)
+AM_CFLAGS = $(EVDEV_CFLAGS) $(LCM_CFLAGS) $(M_FLAGS)
 
 dist_noinst_DATA = README.md \
 	lcmtypes/mx/mx_joy6_t.lcm

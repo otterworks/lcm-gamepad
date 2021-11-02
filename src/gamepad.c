@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <math.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -33,6 +34,15 @@ normalize(const int v, const int min, const int max)
   double half_range = 0.5 * (max - min);
   double sv = v - half_range;
   return sv / half_range;
+}
+
+static inline double
+deadband(double u, const double db)
+{
+  if (fabs(u) < db) {
+    u = 0;
+  }
+  return u;
 }
 
 int
@@ -155,17 +165,20 @@ main(int argc, char** argv)
           joy.utime = utime();
           switch (iev.code) {
             case EV_SURGE:
-              joy.joyval[XJ_SURGE] = normalize(iev.value, surge_min, surge_max);
+              joy.joyval[XJ_SURGE] = deadband(
+                normalize(iev.value, surge_min, surge_max), STICK_DEADBAND);
               break;
             case EV_SWAY:
-              joy.joyval[XJ_SWAY] = normalize(iev.value, sway_min, sway_max);
+              joy.joyval[XJ_SWAY] = deadband(
+                normalize(iev.value, sway_min, sway_max), STICK_DEADBAND);
               break;
             case EV_HEAVE:
-              joy.joyval[XJ_HEAVE] =
-                -normalize(iev.value, heave_min, heave_max);
+              joy.joyval[XJ_HEAVE] = -deadband(
+                normalize(iev.value, heave_min, heave_max), STICK_DEADBAND);
               break;
             case EV_YAW:
-              joy.joyval[XJ_YAW] = normalize(iev.value, yaw_min, yaw_max);
+              joy.joyval[XJ_YAW] = deadband(
+                normalize(iev.value, yaw_min, yaw_max), STICK_DEADBAND);
               break;
             default:
               fprintf(stderr,
