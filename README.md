@@ -20,6 +20,13 @@ autoreconf -fi && ./configure && make clean all
 running the program
 -------------------
 
+On the NUC with the DualSense controller:
+
+```
+export LCM_DEFAULT_URL=udpm://239.255.76.67:7667?ttl=1 ./lcm-gamepad -v -d /dev/input/event28
+
+```
+
 ```
 ./lcm-gamepad -d /dev/input/by-id/usb-Sony_Computer_Entertainment_Wireless_Controller-event-joystick
 ```
