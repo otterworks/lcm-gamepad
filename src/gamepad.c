@@ -113,8 +113,15 @@ main(int argc, char** argv)
   if (-1 == rc) {
     perror("epoll_ctl");
     fprintf(stderr,
-            "failed to add output timer fd %d to epoll fd %d\n",
+            "failed to add output timer fd %d using %d to epoll fd %d\n",
             pev.data.fd,
+            EPOLLIN,
+            epfd);
+  } else {
+    fprintf(stdout,
+            "added output timer fd %d using %d to epoll fd %d\n",
+            pev.data.fd,
+            EPOLLIN,
             epfd);
   }
   pev.data.fd = ctfd;
@@ -188,6 +195,10 @@ main(int argc, char** argv)
           mx_joyButtonNumber_t_publish(lcm, BUTTON_OUTPUT_CHANNEL, &btn);
           btn.utime = 0;
           btn.buttonNumber = 0;
+        } else if (0 == iev.type) {
+            // do nothing
+        } else {
+            fprintf(stderr, "unhandled iev.type = %d\n", iev.type);
         }
       } else if (rc == LIBEVDEV_READ_STATUS_SYNC) {
         fputs("libevdev_next_event returned LIBEVDEV_READ_STATUS_SYNC\n",
