@@ -4,8 +4,8 @@
   "/dev/input/by-id/"                                                          \
   "usb-Sony_Computer_Entertainment_Wireless_Controller-event-joystick"
 
-#define EV_SURGE ABS_X          // L horizontal
-#define EV_SWAY ABS_Y           // L vertical
+#define EV_SURGE ABS_Y          // L vertical
+#define EV_SWAY ABS_X           // L horizontal
 #define EV_HEAVE ABS_RY         // R vertical
 #define EV_YAW ABS_RX           // R horizontal
 #define EV_AUTO_DEPTH BTN_X     // Triangle
