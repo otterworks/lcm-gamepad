@@ -161,7 +161,8 @@ main(int argc, char** argv)
               joy.joyval[XJ_SWAY] = normalize(iev.value, sway_min, sway_max);
               break;
             case EV_HEAVE:
-              joy.joyval[XJ_HEAVE] = -normalize(iev.value, heave_min, heave_max);
+              joy.joyval[XJ_HEAVE] =
+                -normalize(iev.value, heave_min, heave_max);
               break;
             case EV_YAW:
               joy.joyval[XJ_YAW] = normalize(iev.value, yaw_min, yaw_max);
@@ -196,9 +197,9 @@ main(int argc, char** argv)
           btn.utime = 0;
           btn.buttonNumber = 0;
         } else if (0 == iev.type) {
-            // do nothing
+          // do nothing
         } else {
-            fprintf(stderr, "unhandled iev.type = %d\n", iev.type);
+          fprintf(stderr, "unhandled iev.type = %d\n", iev.type);
         }
       } else if (rc == LIBEVDEV_READ_STATUS_SYNC) {
         fputs("libevdev_next_event returned LIBEVDEV_READ_STATUS_SYNC\n",
@@ -206,11 +207,8 @@ main(int argc, char** argv)
       }
     } else if (otfd == pev.data.fd) {
       size_t n = read(pev.data.fd, &expirations, 8);
-      if (joy.utime != 0) {
-        joy.utime = utime();
-        mx_joy6_t_publish(lcm, STICK_OUTPUT_CHANNEL, &joy);
-        joy.utime = 0;
-      }
+      joy.utime = utime();
+      mx_joy6_t_publish(lcm, STICK_OUTPUT_CHANNEL, &joy);
     }
   }
 
