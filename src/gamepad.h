@@ -1,5 +1,4 @@
-// #include "dualsense.h"
-#include "dualshock.h"
+#include "1804-dualsense.h"
 
 #define OUTPUT_PERIOD 100000000 // nanoseconds
 #define STICK_DEADBAND 0.2      // normalized
