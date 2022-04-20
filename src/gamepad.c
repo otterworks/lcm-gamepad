@@ -181,10 +181,12 @@ main(int argc, char** argv)
                 normalize(iev.value, yaw_min, yaw_max), STICK_DEADBAND);
               break;
             default:
-              fprintf(stderr,
-                      "unhandled code: %s, value: %d\n",
-                      libevdev_event_code_get_name(iev.type, iev.code),
-                      iev.value);
+              if (args.verbosity > 0) {
+                fprintf(stderr,
+                        "unhandled code: %s, value: %d\n",
+                        libevdev_event_code_get_name(iev.type, iev.code),
+                        iev.value);
+              }
           }
           // DO NOT publish on LCM at the event rate from the controller,
           // let the timerfd handle that
@@ -201,10 +203,12 @@ main(int argc, char** argv)
               btn.buttonNumber = XJ_START_TRACKING;
               break;
             default:
-              fprintf(stderr,
-                      "unhandled code: %s, value: %d\n",
-                      libevdev_event_code_get_name(iev.type, iev.code),
-                      iev.value);
+              if (args.verbosity > 0) {
+                fprintf(stderr,
+                        "unhandled code: %s, value: %d\n",
+                        libevdev_event_code_get_name(iev.type, iev.code),
+                        iev.value);
+              }
           }
           mx_joyButtonNumber_t_publish(lcm, BUTTON_OUTPUT_CHANNEL, &btn);
           btn.utime = 0;
