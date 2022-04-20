@@ -226,10 +226,6 @@ main(int argc, char** argv)
       size_t n = read(pev.data.fd, &expirations, 8);
       joy.utime = utime();
       mx_joy6_t_publish(lcm, STICK_OUTPUT_CHANNEL, &joy);
-      joy.joyval[XJ_SURGE] = 0;
-      joy.joyval[XJ_SWAY] = 0;
-      joy.joyval[XJ_HEAVE] = 0;
-      joy.joyval[XJ_YAW] = 0;
     }
   }
 
