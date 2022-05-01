@@ -11,6 +11,13 @@ My initial development will focus on the PS4 DualShock controller, because
 that's what I have handy. MESOBOT has used the Xbox One controller in the
 past, so I'll probably tackle that second.
 
+dependencies
+------------
+
+This project uses GNU autotools for the build system.
+
+This project requires `libevdev`; if you do not have it, `configure` will throw an informative error. For recent debian-based distributions, the package you need to install is `libevdev-dev`.
+
 building
 --------
 ```
