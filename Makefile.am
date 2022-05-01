@@ -7,16 +7,16 @@ dist_noinst_DATA = README.md \
 	lcmtypes/mx/mx_joyButtonNumber_t.lcm
 # pkgconfig_DATA = lcm-gamepad.pc
 
-src/mx_%.c src/mx_%.h: lcmtypes/mx/mx_%.lcm
-	$(LCMGEN) --c --c-hpath @builddir@/src --c-cpath @builddir@/src $^
+mx_%.c mx_%.h: lcmtypes/mx/mx_%.lcm
+	$(LCMGEN) --c --c-hpath @builddir@ --c-cpath @builddir@ $^
 
 bin_PROGRAMS = lcm-gamepad
 
 lcm_gamepad_SOURCES = config.h \
-	src/mx_joy6_t.h \
-	src/mx_joy6_t.c \
-	src/mx_joyButtonNumber_t.h \
-	src/mx_joyButtonNumber_t.c \
+	mx_joy6_t.h \
+	mx_joy6_t.c \
+	mx_joyButtonNumber_t.h \
+	mx_joyButtonNumber_t.c \
 	src/gamepad.h \
 	src/gamepad-argp.h \
 	src/gamepad.c
